@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Greetings from {{company}}</title>
+</head>
+<body>
+	Hello {{name}},
+	<br>
+
+	{{msg}}
+
+	<br>
+
+	Copyright: {{copyright}}
+</body>
+</html>

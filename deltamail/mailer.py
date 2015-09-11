@@ -27,6 +27,8 @@ class Mailer:
         '''
         Sends the mail object.
         '''
+        raise NotImplementedError()
+
         # get the message ready
         msg = email.mime.text.MIMEText(mail.body)
         msg['Subject'] = mail.subject
