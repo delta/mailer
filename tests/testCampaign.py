@@ -1,9 +1,19 @@
+import shutil
+
 from deltamail.campaign import BulkMailCampaign, TransactionMailCampaign
 from deltamail.campaign import CampaignFactory
+from deltamail.mailer import Mailer
+
+mailer = Mailer('mailtrap.io', 465, 'username', 'password', 'senderid')
 
 
 class TestBulkMailCampaign:
     def setUp(self):
+        # remove the email-preview folder possibly created in the
+        # previous run of the test suite. This folder is created
+        # in the testPreviewDefault() test
+        shutil.rmtree('./email-preview', ignore_errors=True)
+
         self.bmc = BulkMailCampaign("Greetings from {{company}}",
                                     ['job@bob.com'],
                                     "Hello {{name}},\n{{msg}}",
@@ -31,7 +41,7 @@ class TestBulkMailCampaign:
         pass
 
     def testSend(self):
-        # UNTESTED!
+        self.bmc.send(mailer)
         pass
 
     def testPreviewInBrowser(self):
@@ -79,7 +89,7 @@ class TestTransactionMailCampaign:
         pass
 
     def testSend(self):
-        # UNTESTED!
+        self.tmc.send(mailer)
         pass
 
     def testPreviewInBrowser(self):
@@ -110,3 +120,6 @@ class TestCampaignFactory():
 
         self.bmc.preview(loc1)
         self.tmc.preview(loc2)
+
+        self.bmc.send(mailer)
+        self.tmc.send(mailer)
