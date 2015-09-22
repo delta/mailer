@@ -1,6 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 # from email.mime.multipart import MIMEMultipart
+from email.Utils import formatdate
 
 
 class Mailer:
@@ -37,6 +38,7 @@ class Mailer:
         msg['Subject'] = mail.subject
         msg['From'] = self.senderEmail
         msg['To'] = ",".join(mail.mailingList)
+        msg["Date"] = formatdate(localtime=True)
 
         # connect to the server
         server = smtplib.SMTP(self.host, self.port)
