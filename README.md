@@ -2,30 +2,37 @@
 ---
 Command line mail utility
 
+Installation:
+=============
+1. Clone the repo on your computer and `cd` to the root folder of the project.
+2. run `python setup.py install`
+
 Usage:
 ======
 
+*NOTE: The following examples call the program `delta-mail`. This is how it is currently named, however the name is expected to be changed soon.*
+
 - Sending the exact same mail to a list of people. No variables in the mail template
 	
-	`mailer -r="bob@job.com,job@bob.com" -s="Welcome" input.mmtmpl`
+	`delta-mail -r="bob@job.com,job@bob.com" -s="Welcome" input.mmtmpl`
 
 - Sending the exact same mail to a list of people. However, the email template
 can contain variables that are specific to this particular batch of mails.
 	
-	`mailer -r="bob@job.com,job@bob.com" --globals=variables.mvar -s="Welcome to {{EventName}}" input.mmtmpl`
+	`delta-mail -r="bob@job.com,job@bob.com" --globals=variables.mvar -s="Welcome to {{EventName}}" input.mmtmpl`
 	
 - Sending personalised mails. Requires the use of a `.ml` (mailing list) file
 	
-	`mailer -R=receivers.ml -s="Welcome {{name}}!" input.mmtmpl`
+	`delta-mail -R=receivers.ml -s="Welcome {{name}}!" input.mmtmpl`
 
 - Sending personalised mails. Requires the use of a `.ml` file. In addition, one
 can use a `.mvar` (mail variables) file to specify variables common to this particular batch of mails.
 	
-	`mailer -R=receivers.ml --globals=globalvars.mvar -s="Welcome {{name}}!" input.mmtmpl`
+	`delta-mail -R=receivers.ml --globals=globalvars.mvar -s="Welcome {{name}}!" input.mmtmpl`
 
 - Automatically finding out the type of the mail to be sent
 	
-	`mailer --smartsend=./mail-campaigns/festember/c1`
+	`delta-mail --smartsend=./mail-campaigns/festember/c1`
 
 The folder `./mail-campaigns/festember/c1` should have the following structure:
 	

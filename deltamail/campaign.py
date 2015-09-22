@@ -148,8 +148,10 @@ class TransactionMailCampaign(Campaign):
         self._mails = []
 
         for receiver in mailingList:
-            variables = globalVars
-            # add personal variables. Override global variables if needed
+            # copy the global variables in a new dict. 
+            # Override with personal variables if needed
+            variables = dict(globalVars)
+
             for key in receiver["variables"]:
                 variables[key] = receiver["variables"][key]
 
