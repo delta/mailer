@@ -1,5 +1,6 @@
 import smtplib
-import email
+from email.mime.text import MIMEText
+# from email.mime.multipart import MIMEMultipart
 
 
 class Mailer:
@@ -13,37 +14,39 @@ class Mailer:
     email = ""
     password = ""
 
-    def __init__(self, host="localhost", port="25", email="", password=""):
+    def __init__(self, host="localhost", port="25",
+                 loginId="", password="", senderEmail=""):
         '''
         Accept the host, port, email and password for logging in to the SMTP
         server
         '''
         self.host = host
-        self.port = str(port)
-        self.email = email
+        self.port = int(port)
+        self.loginId = loginId
         self.password = password
+        self.senderEmail = senderEmail
 
     def send(self, mail):
         '''
         Sends the mail object.
         '''
-        raise NotImplementedError()
+        # raise NotImplementedError()
 
         # get the message ready
-        msg = email.mime.text.MIMEText(mail.body)
+        msg = MIMEText(mail.body, 'html')
         msg['Subject'] = mail.subject
-        msg['From'] = self.email
-        msg['To'] = mail.mailingList
+        msg['From'] = self.senderEmail
+        msg['To'] = ",".join(mail.mailingList)
 
         # connect to the server
-        server = smtplib.SMTP(self.host + ":" + self.port)
-        server.set_debuglevel(1)
-        server.ehlo()
+        server = smtplib.SMTP(self.host, self.port)
+        # server.set_debuglevel(1)
+        # server.ehlo()
         server.starttls()
-        server.login(self.email, self.password)
+        server.login(self.loginId, self.password)
 
         # send the mail
-        server.sendmail(self.email, [msg['To']], msg.as_string())
+        server.sendmail(self.email, msg['To'], msg.as_string())
 
         # close the connection
         server.quit()
