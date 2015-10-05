@@ -1,7 +1,8 @@
 from deltamail.campaign import CampaignFactory
 
+
 def console_main():
-	print "it works"
+    print "it works"
 
 '''
 

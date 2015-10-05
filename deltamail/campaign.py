@@ -1,58 +1,108 @@
+'''Defines the Campaign-* classes and the CampaignFactory function
+
+This module defines the following classes:
+    Campaign (Abstract class)
+    BulkMailCampaign
+    TransactionMailCampaign
+
+It also defines the CampaignFactory method used to create the Campaign objects
+easily.
+
+TODO(thakkarparth007): Handle previewing in a better manner.
+'''
+
 from abc import ABCMeta, abstractmethod
 import os
 
-from mail import MailFactory
+from deltamail.mail import MailFactory
 
 # Upper limit on preview-file name length
 MAX_PREVIEW_FILE_LEN = 30
 
 
-class Campaign():
+class Campaign(object):
     '''
-        *-Campaign objects inherit from Campaign.
-        *-Campaign objects just fill the _mails list, and
-        the sending and previewing is done here itself.
-    '''
+    Abstract class. Used to handle a bunch of mails to be sent.
 
+    *-Campaign objects inherit from Campaign.
+    *-Campaign objects just fill the _mails list, and
+    The sending and previewing is done here itself.
+    '''
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def _createMailObjects(self, subject, mailingList,
-                           templateStr, globalVars):
+    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
         '''
-            Populate the self._mails list
+        Populate the self._mails list
+
+        Called by __init__
+        This is the only method that is to be implemented by the *-Campaign
+        classes. It fills the _mails list and the other operations on
+        Campaign classes are all the same, and hence are defined in the
+        Campaign class itself.
         '''
         pass
 
-    def __init__(self, subject, mailingList, templateStr, globalVars):
+    def __init__(self, subject, mailing_list, template_str, global_vars):
+        '''
+        Initialise the Campaign class.
+
+        Calls the (abstract) _create_mail_objects method and populates
+        the the self._mails list.
+
+        Args:
+            subject (str): The subject of the mail (can be a template).
+            mailing_list (list): The list of of email-ids to whom the
+                mails are to be sent. Type varies based on the *-Campaign
+                class being used.
+            template_str (str): The template string for the mail.
+            global_vars (dict): The dictionary of global variables to fill
+                up the template.
+
+        Returns:
+            None
+        '''
         # will store the mail objects to be sent
         self._mails = []
-        self._createMailObjects(subject, mailingList, templateStr, globalVars)
+        self._create_mail_objects(subject, mailing_list, template_str, global_vars)
 
     def send(self, mailer):
         '''
-            Send the mails.
+        Send the mails.
 
-            Parameters:
-                name        type        comments
-                ---------------------------------------
-                mailer      Mailer      Will be used to send the mails
+        Uses a Mailer instance to send the mails. Doesn't do anything
+        other than to call the Mailer.send() method for each of the
+        Mail objects in the Campaign. Just a helper/syntactic sugar.
+
+        Args:
+            mailer (Mailer): Used to do the actual sending
+
+        Returns:
+            None
         '''
-        for m in self._mails:
-            mailer.send(m)
+        for mail in self._mails:
+            mailer.send(mail)
 
     def preview(self, location=""):
         '''
-            Generate the html files to be sent in the `location` folder.
+        Generate the html files to be sent in the `location` folder.
 
-            Parameters:
-                name        type        comments
-                ---------------------------------------
-                location    str         The folder where the preview mails
-                                        are to be dumped.
-                                        Defaults to cwd/email-preview/
+        Currently, the mails are being created as html files, and each
+        file is stored as "SUBJECT-RECEIVER_ID.html", and the filename
+        is limited to MAX_PREVIEW_FILE_LEN number of characters
+        (excluding the ".html" extension).
+
+        Args:
+            location (Optional[str]): Location to dump preview mail files.
+                Defaults to CURRENT_WORKING_DIR/email-preview.
+
+        Raises:
+            Exception: If the location is given and isn't a folder,
+                or, if the location isn't given and "email-preview"
+                folder already exists.
         '''
 
+        # TODO(thakkarparth007): Raise better exceptions.
         if location is "":
             location = os.path.join(os.getcwd(), "email-preview", "")
             os.mkdir(location)
@@ -64,13 +114,13 @@ class Campaign():
             )
 
         for mail in self._mails:
-            for receiver in mail.mailingList:
+            for receiver in mail.mailing_list:
                 filename = mail.subject + "-" + receiver
-                filename = filename[:MAX_PREVIEW_FILE_LEN]
+                filename = filename[:MAX_PREVIEW_FILE_LEN] + ".html"
 
                 # replace \ and / with - in case the subject contains
                 # those characters
-                filename.replace("\/", "-")
+                filename.replace(r"/", "-")
                 filename.replace("\\", "-")
 
                 # finally, write the body
@@ -78,17 +128,22 @@ class Campaign():
                 fpreview.write(mail.body)
                 fpreview.close()
 
-    def previewOneInBrowser(self):
+    def preview_one_in_browser(self):
         '''
-            Open the first mail in browser
+        Open the first mail in browser
 
-            Parameters:
-                none
+        The method hasn't been implemented yet.
+
+        Parameters:
+            none
+
+        Returns:
+            None
         '''
 
         raise NotImplementedError("Yet to be implemented.")
         if len(self._mails) is 0:
-            raise("No mails to be sent!")
+            raise "No mails to be sent!"
 
         # fpreview = open()
 
@@ -97,131 +152,159 @@ class BulkMailCampaign(Campaign):
     '''
         Same mail sent to each person. (Allows usage of global variables)
     '''
-    def _createMailObjects(self, subject, mailingList,
-                           templateStr, globalVars):
+    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
         '''
-            Private method. Called by __init__
-            Populate the self._mails list
+        Populate the _mails list. (Private method)
 
-            Parameters:
-                name        type        comments
-                ---------------------------------------
-                subject     str         The subject of the mail. Can be a
-                                        template with only global variables
-                mailingList list        The list of the email ids to whom
-                                        the mails are to be sent
-                templateStr str         The template for the body of the
-                                        mail. Can contain only global variables
-                globalVars  dict       Dictionary of global variables
+        Called by __init__
+        This is the only method that is to be implemented by the *-Campaign
+        classes. It fills the _mails list and the other operations on
+        Campaign classes are all the same, and hence are defined in the
+        Campaign class itself.
+
+        Args:
+            subject (str): The subject of the mail. Can be a template with
+                only global variables
+            mailing_list (list): The list of the email ids to whom the mails
+                are to be sent.
+            template_str (str): The template for the body of the mail. Can
+                contain only global variables.
+            global_vars (dict): The dictionary of global variables.
+
+        Returns:
+            None
         '''
 
         self._mails = [
-            MailFactory(subject, mailingList, templateStr, globalVars)
+            MailFactory(subject, mailing_list, template_str, global_vars)
         ]
 
-    def __init__(self, subject, mailingList, templateStr, globalVars):
-        Campaign.__init__(self, subject, mailingList, templateStr, globalVars)
+    def __init__(self, subject, mailing_list, template_str, global_vars):
+        Campaign.__init__(self, subject, mailing_list, template_str, global_vars)
 
 
 class TransactionMailCampaign(Campaign):
-    '''
-        Personalised mails sent to each person.
-    '''
-    def _createMailObjects(self, subject, mailingList,
-                           templateStr, globalVars):
+    '''Personalised mails sent to each person.'''
+    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
         '''
-            Private method. Called by __init__
-            Populate the self._mails list
+        Populate the _mails list. (Private method)
 
-            Parameters:
-                name        type        comments
-                ---------------------------------------
-                subject     str         The subject of the mail. Can be a
-                                        template with only global variables
-                mailingList list        The list of {"email","variables"} dicts
-                                        to whom the mails are to be sent
-                templateStr str         The template for the body of the
-                                        mail. Can contain only global variables
-                globalVars  dict        Dictionary of global variables
+        Called by __init__
+        This is the only method that is to be implemented by the *-Campaign
+        classes. It fills the _mails list and the other operations on
+        Campaign classes are all the same, and hence are defined in the
+        Campaign class itself.
+
+        The personal variables override the global variables of the same name,
+        if any.
+
+        Args:
+            subject (str): The subject of the mail. Can be a template with
+                global or personal variables.
+            mailing_list (list): The list of the {"email","variables"} dicts
+                to whom the mails are to be sent.
+            template_str (str): The template for the body of the mail. Can
+                contain global or personal variables.
+            global_vars (dict): The dictionary of global variables.
+
+        Returns:
+            None
         '''
 
         self._mails = []
 
-        for receiver in mailingList:
-            # copy the global variables in a new dict. 
+        for receiver in mailing_list:
+            # copy the global variables in a new dict.
             # Override with personal variables if needed
-            variables = dict(globalVars)
+            variables = dict(global_vars)
 
             for key in receiver["variables"]:
                 variables[key] = receiver["variables"][key]
 
             self._mails.append(
                 MailFactory(subject, [receiver["email"]],
-                            templateStr, variables)
+                            template_str, variables)
             )
 
-    def __init__(self, subject, mailingList, templateStr, globalVars):
-        Campaign.__init__(self, subject, mailingList, templateStr, globalVars)
+    def __init__(self, subject, mailing_list, template_str, global_vars):
+        Campaign.__init__(self, subject, mailing_list, template_str, global_vars)
 
 
-def CampaignFactory(subject, mailingList,
-                    templateFile, globalVarsFile=""):
+def CampaignFactory(subject, mailing_list,
+                    template_file, global_vars_file=""):
     '''
-        Factory to construct BulkMail or TransactionMail object
+    Factory to construct BulkMailCampaign or TransactionMailCampaign object
 
-        Parameters:
-            name                type        comments
-            -----------------------------------------
-            subject             str         required
-            mailingList         list/str    required    a list of strings or
-                                                        a string (filename)
-            templateFile        str         required    (filename)
-            globalVarsFile      str         optional    (filename)
+    Creates the appropriate Campaign object based on the input parameters.
+
+    Args:
+        subject (str): The subject string for the mails being sent (can be template).
+        mailing_list (list/str): A list of strings or a string (filename).
+            If it's a list of strings, the strings are taken as email-ids.
+            Otherwise, if a string is passed, it is taken as the filename of
+            the mailing-list file (.ml file). In latter case, TransactionMailCampaign
+            is returned. In former case, BulkMailCampaign is returned.
+        template_file (str): The filename that contains the template that is to
+            be used to send the mails.
+        global_vars_file (Optional[str]): The filename that contains the global variables. 
+
+    Returns:
+        Campaign: BulkMailCampaign or TransactionMailCampaign based on whether
+            mailing_list is a list of email-ids, or is the filename of the .ml
+            file.
+
+    Raises:
+        Exception: If template file doesn't exist.
+            If global_vars_file is given and the file doesn't exist.
+            If the mailing-list file doesn't exist (if mailing_list is filename).
+            If first field of mailing list file isn't "email"
+
+    TODO (thakkarparth007): Use better exception-names.
     '''
 
     # The following variables are used to initialise the appropriate class
     #
-    #   templateStr : The template string read from the template file
-    #   globalVars  : The dictionary containing the global variables
-    #   mailingList : The list of dictionaries that contains the
+    #   template_str : The template string read from the template file
+    #   global_vars  : The dictionary containing the global variables
+    #   mailing_list : The list of dictionaries that contains the
     #                 mailing list
 
     # read the template file
-    if os.path.exists(templateFile) is False:
+    if os.path.exists(template_file) is False:
         raise Exception("Template list file ({0}) doesn't exist"
-                        .format(os.path.abspath(templateFile)))
+                        .format(os.path.abspath(template_file)))
 
-    ftmpl = open(templateFile, "r")
-    templateStr = ftmpl.read()
+    ftmpl = open(template_file, "r")
+    template_str = ftmpl.read()
     ftmpl.close()
 
     # read the global vars file
-    if globalVarsFile != "" and os.path.exists(globalVarsFile) is False:
+    if global_vars_file != "" and os.path.exists(global_vars_file) is False:
         raise Exception("Global variables file ({0}) doesn't exist"
-                        .format(os.path.abspath(globalVarsFile)))
+                        .format(os.path.abspath(global_vars_file)))
 
     contents = ""
-    if globalVarsFile != "":
-        fglbl = open(globalVarsFile, "r")
+    if global_vars_file != "":
+        fglbl = open(global_vars_file, "r")
         contents = fglbl.read()
         fglbl.close()
 
-    globalVars = dict([(line.split("=")[0].strip(), line.split("=")[1])
-                      for line in contents.splitlines()
-                      if line.rstrip() != ""])
+    global_vars = dict([(line.split("=")[0].strip(), line.split("=")[1])
+                       for line in contents.splitlines()
+                       if line.rstrip() != ""])
 
-    # read the mailingList if it is a string
+    # read the mailing_list if it is a string
     # in any case, convert it to a list of
     # dictionaries of form:
     #   { "email": "...", "variables": "" }
-    if type(mailingList) is str:
-        mailingListFile = mailingList
+    if isinstance(mailing_list, str):
+        mailing_list_file = mailing_list
 
-        if os.path.exists(mailingListFile) is False:
+        if os.path.exists(mailing_list_file) is False:
             raise Exception("Mailing list file ({0}) doesn't exist"
-                            .format(os.path.abspath(mailingListFile)))
+                            .format(os.path.abspath(mailing_list_file)))
 
-        fml = open(mailingListFile, "r")
+        fml = open(mailing_list_file, "r")
         contents = fml.read().splitlines()
         fml.close()
 
@@ -231,10 +314,10 @@ def CampaignFactory(subject, mailingList,
             raise Exception("First field of mailing list file is "
                             "required to be `email`")
 
-        mailingList = []
+        mailing_list = []
         for row in rows:
             row = row.split("\t")
-            mailingList.append({
+            mailing_list.append({
                 "email": row[0],
                 "variables": dict([
                     (headers[i], row[i])
@@ -242,9 +325,9 @@ def CampaignFactory(subject, mailingList,
                 ])
             })
 
-        mailConstructor = TransactionMailCampaign
+        mail_constructor = TransactionMailCampaign
 
     else:
-        mailConstructor = BulkMailCampaign
+        mail_constructor = BulkMailCampaign
 
-    return mailConstructor(subject, mailingList, templateStr, globalVars)
+    return mail_constructor(subject, mailing_list, template_str, global_vars)
