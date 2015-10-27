@@ -93,7 +93,7 @@ def console_main():
     sendermailid = args['sendermailid'] or (username + '@' + host)
 
     # read the password
-    password = getpass.getpass(prompt="Enter the password for %s@%s: " % (username, host))
+    password = getpass.getpass(prompt="Password for %s@%s: " % (username, host))
 
     # send/preview?
     smart_send = args['smart_send']
