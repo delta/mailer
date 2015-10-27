@@ -316,7 +316,11 @@ def CampaignFactory(subject, mailing_list,
 
         mailing_list = []
         for row in rows:
+            if row.strip() == "":
+                continue
             row = row.split("\t")
+            if len(row) != len(headers):
+                raise Exception("%s: Mismatch in number of columns." % (mailing_list_file,))
             mailing_list.append({
                 "email": row[0],
                 "variables": dict([

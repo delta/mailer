@@ -6,12 +6,22 @@ what the campaign factory should do
 import argparse
 import os
 import getpass
+import sys
 
 from deltamail.campaign import CampaignFactory
 from deltamail.mailer import Mailer
 
 
 def console_main():
+    try:
+        work()
+    except:             # Catches *all* exceptions. https://wiki.python.org/moin/HandlingExceptions
+        e = sys.exc_info()[1]
+        print "\nError: " + str(e)
+        sys.exit()
+
+
+def work():
     '''
     The main function of the program.
     Parses the command line arguements.
@@ -31,7 +41,7 @@ def console_main():
         - Receivers of the mail campaign (A list of email ids who'll receive your mail)
             OR
           A mailing list file - a tab separated file with the first column named
-          'email' and the all other columns are the variables you'd like in 
+          'email' and the all other columns are the variables you'd like in
           the mail templates
         - Mail Template - A jinja compatible template to be used for the mail body
         - Global variables (options) - A list of variables that will be substituted
@@ -48,28 +58,27 @@ def console_main():
                                      formatter_class=argparse.RawTextHelpFormatter)
 
     # This is required only in non-smart-send mode.
-    parser.add_argument('-s', '--subject', help='Subject of email')
+    parser.add_argument('-s', '--subject',     help='Subject of email')
 
     # The following two are required only in non-smart-send mode
-    parser.add_argument('-r', '--receivers', help='Receivers List in qoutes separated by commas')
+    parser.add_argument('-r', '--receivers',   help='Receivers List in qoutes separated by commas')
     parser.add_argument('-R', '--mailinglist', help="path to the .ml file")
 
     # This file is required only in non-smart-send mode
-    parser.add_argument('-t', '--template', help="template file")
+    parser.add_argument('-t', '--template',    help="template file")
 
-    parser.add_argument('-g', '--global_var', help="global variable file")
+    parser.add_argument('-g', '--global_var',  help="global variable file")
 
     # The username is required. The sender-email, if not specified, will be taken
     # as username@smtp_host
-    parser.add_argument('-u', '--username', help="Username for SMTP", required=True)
-    parser.add_argument('-p', '--port', help="Port to be used", type=int, default=25)
-    parser.add_argument('-m', '--sendermailid', help="The sender email")
-    parser.add_argument('-o', '--host', help="SMTP host IP or name", default="localhost")
+    parser.add_argument('-u', '--username',    help="Username for SMTP", required=True)
+    parser.add_argument('-p', '--port',        help="Port to be used", type=int, default=25)
+    parser.add_argument('-m', '--sendermailid',help="The sender email")
+    parser.add_argument('-o', '--host',        help="SMTP host IP or name", default="localhost")
 
-    parser.add_argument('-pw', '--preview', help="to preview the mail(**the mail wont be sent**)")
+    parser.add_argument('-pw', '--preview',    help="to preview the mail(**the mail wont be sent**)")
     parser.add_argument('-sm', '--smart_send', help="path for smart send")
     args = vars(parser.parse_args())
-
 
     # Checking if Username ,Port and Host are Provided
 
@@ -93,8 +102,7 @@ def console_main():
     sendermailid = args['sendermailid'] or (username + '@' + host)
 
     # read the password
-    print "Enter the password for %s@%s: " % (username, host)
-    password = getpass.getpass()
+    password = getpass.getpass(prompt="Password for %s@%s: " % (username, host))
 
     # send/preview?
     smart_send = args['smart_send']
@@ -102,12 +110,14 @@ def console_main():
 
     # Choosing Smart Send or Hard Send
     if smart_send:
+        smart_send = os.path.abspath(smart_send)
         campaign_object = CampaignFactory(*smart_send_fun(smart_send))
     else:
         campaign_object = CampaignFactory(*hard_send(args))
 
     # Choosing Preview or Sending the Mail
     if preview_dir:
+        preview_dir = os.path.abspath(preview_dir)
         campaign_object.preview(preview_dir)
     else:
         mailer = Mailer(sendermailid, host, port, username, password)
@@ -136,16 +146,12 @@ def smart_send_fun(smart_send):
         subject = sub_file.read()
         sub_file.close()
 
-
-    # For receivers.ml
-    # if the file doesnt exist or the user doesnt have permission , it exits
-
+    # For mailinglist.ml
     try:
         with open(receivers):
             pass
     except IOError:
-        raise SystemExit("The file mailinglist.ml either doesnt exist or \
-            the user doesnt have permission to access the file\n")
+        raise Exception("The file `mailinglist.ml` either doesn't exist or you don't have read access to the file.")
 
     # For input.mmtmpl
     # if the file doesnt exist or the user doesnt have permission , it exits
@@ -154,8 +160,7 @@ def smart_send_fun(smart_send):
         with open(template):
             pass
     except IOError:
-        raise SystemExit("The file template.mmtmpl either doesnt exist or \
-            the user doesnt have permission to access the file\n")
+        raise Exception("The file `template.mmtmpl` either doesn't exist or you don't have read access to the file.")
 
     # For globals.var
     # if the file isnt provided , empty string is sent
@@ -167,8 +172,7 @@ def smart_send_fun(smart_send):
             with open(global_var):
                 pass
         except IOError:
-            print "The file globals.var doesnt have permission \
-            to access the file by the user\n"
+            raise Exception("Please provide read access to `globals.mvar`")
     else:
         # print "global_var isn't specified."
         global_var = ""
@@ -192,19 +196,18 @@ def hard_send(args):
     # and not a file**
 
     if subject is None:
-        raise Exception("Please Specify the Subject.")
+        raise Exception("Please specify the subject.")
 
     # For template
     # Check if template is None
     # or if file exits and user has permissions
 
     if template is None:
-        raise Exception("Template Missing")
+        raise Exception("Template is required.")
     elif not os.access(template, os.F_OK):
-        raise Exception("Provide a Valid or Existing File")
+        raise Exception("`%s` doesn't exist." % (template,))
     elif not os.access(template, os.R_OK):
-        raise Exception("Provide Read Access to template.mmtmpl")
-
+        raise Exception("Please provide read access to `%s`." % (template,))
 
     # For mailinglist
     # there are two options
@@ -216,17 +219,16 @@ def hard_send(args):
     # the user has permissions
 
     if not receivers and not mailinglist:
-        raise Exception("mailingList Missing")
+        raise Exception("Exactly one of -r or -R is required.")
     elif not receivers and mailinglist:
-        if not os.access(receivers, os.F_OK):
-            raise Exception("Provide a Valid File name")
-        elif not os.access(receivers, os.R_OK):
-            raise Exception("Provide Read Access to .ml file")
+        if not os.access(mailinglist, os.F_OK):
+            raise Exception("`%s` doesn't exist." % (mailinglist,))
+        elif not os.access(mailinglist, os.R_OK):
+            raise Exception("Please provide read access to `%s`." % (mailinglist,))
     elif receivers and not mailinglist:
         receivers = [each.strip() for each in receivers.split(',')]
     else:
-        raise SystemExit("Either use -r or -R. Don't use both")
-
+        raise SystemExit("Either use -r or -R. Don't use both.")
 
     # For globals.var
     # if the file isnt provided , empty string is sent
@@ -235,9 +237,9 @@ def hard_send(args):
 
     if global_var:
         if not os.access(global_var, os.F_OK):
-            raise Exception("Provide a Valid File name")
+            raise Exception("`%s` doesn't exist." % (global_var,))
         elif not os.access(global_var, os.R_OK):
-            raise Exception("Provice Read Access to the file")
+            raise Exception("Please provide read access to `%s`." % (global_var,))
     else:
         global_var = ""
     return [subject, receivers, template, global_var]

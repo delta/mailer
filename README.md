@@ -14,25 +14,25 @@ Usage:
 
 - Sending the exact same mail to a list of people. No variables in the mail template
 	
-	`delta-mail -r="bob@job.com,job@bob.com" -s="Welcome" input.mmtmpl`
+	`delta-mail -r="bob@job.com,job@bob.com" -s="Welcome" -t=input.mmtmpl -u="123456789" -o=mailtrap.io -p=25`
 
 - Sending the exact same mail to a list of people. However, the email template
 can contain variables that are specific to this particular batch of mails.
 	
-	`delta-mail -r="bob@job.com,job@bob.com" --globals=variables.mvar -s="Welcome to {{EventName}}" input.mmtmpl`
+	`delta-mail -r="bob@job.com,job@bob.com" --globals=variables.mvar -s="Welcome to {{EventName}}" -t=input.mmtmpl -u="123456789" -o=mailtrap.io -p=25`
 	
 - Sending personalised mails. Requires the use of a `.ml` (mailing list) file
 	
-	`delta-mail -R=receivers.ml -s="Welcome {{name}}!" input.mmtmpl`
+	`delta-mail -R=receivers.ml -s="Welcome {{name}}!" -t=input.mmtmpl -u="123456789" -o=mailtrap.io -p=25`
 
 - Sending personalised mails. Requires the use of a `.ml` file. In addition, one
 can use a `.mvar` (mail variables) file to specify variables common to this particular batch of mails.
 	
-	`delta-mail -R=receivers.ml --globals=globalvars.mvar -s="Welcome {{name}}!" input.mmtmpl`
+	`delta-mail -R=receivers.ml --globals=globalvars.mvar -s="Welcome {{name}}!" -t=input.mmtmpl -u="123456789" -o=mailtrap.io -p=25`
 
 - Automatically finding out the type of the mail to be sent
 	
-	`delta-mail --smartsend=./mail-campaigns/festember/c1`
+	`delta-mail --smartsend=./mail-campaigns/festember/ -u="123456789" -o=c1mailtrap.io -p=25`
 
 The folder `./mail-campaigns/festember/c1` should have the following structure:
 	
