@@ -17,7 +17,7 @@ import os
 from deltamail.mail import MailFactory
 
 # Upper limit on preview-file name length
-MAX_PREVIEW_FILE_LEN = 30
+MAX_PREVIEW_FILE_LEN = 70
 
 
 class Campaign(object):
@@ -31,7 +31,7 @@ class Campaign(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
         '''
         Populate the self._mails list
 
@@ -43,7 +43,7 @@ class Campaign(object):
         '''
         pass
 
-    def __init__(self, subject, mailing_list, template_str, global_vars):
+    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
         '''
         Initialise the Campaign class.
 
@@ -51,6 +51,7 @@ class Campaign(object):
         the the self._mails list.
 
         Args:
+            from_id (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail (can be a template).
             mailing_list (list): The list of of email-ids to whom the
                 mails are to be sent. Type varies based on the *-Campaign
@@ -64,7 +65,7 @@ class Campaign(object):
         '''
         # will store the mail objects to be sent
         self._mails = []
-        self._create_mail_objects(subject, mailing_list, template_str, global_vars)
+        self._create_mail_objects(from_id, subject, mailing_list, template_str, global_vars)
 
     def send(self, mailer):
         '''
@@ -83,7 +84,7 @@ class Campaign(object):
         for mail in self._mails:
             mailer.send(mail)
 
-    def preview(self, location=""):
+    def preview(self, location="", preview_count=-1):
         '''
         Generate the html files to be sent in the `location` folder.
 
@@ -95,6 +96,9 @@ class Campaign(object):
         Args:
             location (Optional[str]): Location to dump preview mail files.
                 Defaults to CURRENT_WORKING_DIR/email-preview.
+            preview_count (Optional[int]): Number of preview mails to
+                generate. Set that to -1 if preview of all mails must
+                be generated. Defaults to -1.
 
         Raises:
             Exception: If the location is given and isn't a folder,
@@ -113,8 +117,15 @@ class Campaign(object):
                 .format(os.path.abspath(location))
             )
 
+        if preview_count == -1:
+            preview_count = len(self._mails)
+
         for mail in self._mails:
             for receiver in mail.mailing_list:
+                if preview_count <= 0:
+                    break
+                preview_count -= 1
+
                 filename = mail.subject + "-" + receiver
                 filename = filename[:MAX_PREVIEW_FILE_LEN] + ".html"
 
@@ -127,6 +138,10 @@ class Campaign(object):
                 fpreview = open(os.path.join(location, filename), "w")
                 fpreview.write(mail.body)
                 fpreview.close()
+
+            if preview_count <= 0:
+                break
+
 
     def preview_one_in_browser(self):
         '''
@@ -152,7 +167,7 @@ class BulkMailCampaign(Campaign):
     '''
         Same mail sent to each person. (Allows usage of global variables)
     '''
-    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
         '''
         Populate the _mails list. (Private method)
 
@@ -163,6 +178,7 @@ class BulkMailCampaign(Campaign):
         Campaign class itself.
 
         Args:
+            from_id (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail. Can be a template with
                 only global variables
             mailing_list (list): The list of the email ids to whom the mails
@@ -175,17 +191,37 @@ class BulkMailCampaign(Campaign):
             None
         '''
 
-        self._mails = [
-            MailFactory(subject, mailing_list, template_str, global_vars)
-        ]
+        self._mails = [MailFactory(from_id, subject, mailing_list,
+                                   template_str, global_vars)]
 
-    def __init__(self, subject, mailing_list, template_str, global_vars):
-        Campaign.__init__(self, subject, mailing_list, template_str, global_vars)
+    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
+        super(BulkMailCampaign, self).__init__(
+            from_id, subject, mailing_list, template_str, global_vars
+        )
+
+    def preview(self, location=""):
+        '''
+        Generate the html file to be sent in the `location` folder.
+
+        Calls the Campaign.preview method with preview_count set to 1.
+        The reason to do this is that for bulk mails, the same mail
+        is sent. There is no point in creating separate preview files.
+
+        Args:
+            location (Optional[str]): Location to dump preview mail files.
+                Defaults to CURRENT_WORKING_DIR/email-preview.
+
+        Raises:
+            Exception: If the location is given and isn't a folder,
+                or, if the location isn't given and "email-preview"
+                folder already exists.
+        '''
+        super(BulkMailCampaign, self).preview(location, 1)
 
 
 class TransactionMailCampaign(Campaign):
     '''Personalised mails sent to each person.'''
-    def _create_mail_objects(self, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
         '''
         Populate the _mails list. (Private method)
 
@@ -199,6 +235,7 @@ class TransactionMailCampaign(Campaign):
         if any.
 
         Args:
+            from_id (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail. Can be a template with
                 global or personal variables.
             mailing_list (list): The list of the {"email","variables"} dicts
@@ -222,15 +259,16 @@ class TransactionMailCampaign(Campaign):
                 variables[key] = receiver["variables"][key]
 
             self._mails.append(
-                MailFactory(subject, [receiver["email"]],
-                            template_str, variables)
+                MailFactory(from_id, subject, [receiver["email"]], template_str, variables)
             )
 
-    def __init__(self, subject, mailing_list, template_str, global_vars):
-        Campaign.__init__(self, subject, mailing_list, template_str, global_vars)
+    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
+        super(TransactionMailCampaign,self).__init__(
+            from_id, subject, mailing_list, template_str, global_vars
+        )
 
 
-def CampaignFactory(subject, mailing_list,
+def CampaignFactory(from_id, subject, mailing_list,
                     template_file, global_vars_file=""):
     '''
     Factory to construct BulkMailCampaign or TransactionMailCampaign object
@@ -238,6 +276,7 @@ def CampaignFactory(subject, mailing_list,
     Creates the appropriate Campaign object based on the input parameters.
 
     Args:
+        from_id (str): The "From" address for the mail being sent.
         subject (str): The subject string for the mails being sent (can be template).
         mailing_list (list/str): A list of strings or a string (filename).
             If it's a list of strings, the strings are taken as email-ids.
@@ -289,9 +328,10 @@ def CampaignFactory(subject, mailing_list,
         contents = fglbl.read()
         fglbl.close()
 
-    global_vars = dict([(line.split("=")[0].strip(), line.split("=")[1])
-                       for line in contents.splitlines()
-                       if line.rstrip() != ""])
+    global_vars = dict([
+        (line.split("=")[0].strip(), line.split("=")[1])
+        for line in contents.splitlines() if line.rstrip() != ""
+    ])
 
     # read the mailing_list if it is a string
     # in any case, convert it to a list of
@@ -334,4 +374,4 @@ def CampaignFactory(subject, mailing_list,
     else:
         mail_constructor = BulkMailCampaign
 
-    return mail_constructor(subject, mailing_list, template_str, global_vars)
+    return mail_constructor(from_id, subject, mailing_list, template_str, global_vars)
