@@ -9,10 +9,16 @@ class TestMailFactory(object):
     def test_MailFactory(self):
         """Test the MailFactory function"""
 
-        mf = mail.MailFactory("Greetings from {{company}}", ['job@bob.com'],
-                              "Hello {{name}},\n{{msg}}",
-                              {"company": "Festember", "name": "Job",
-                               "msg": "Sorry, you are rejected. KBye."})
+        mf = mail.MailFactory(
+                "sender@example.com",
+                "Greetings from {{company}}", ['job@bob.com'],
+                "Hello {{name}},\n{{msg}}",
+                {
+                    "company": "Festember", "name": "Job",
+                    "msg": "Sorry, you are rejected. KBye."
+                }
+        )
 
+        assert mf.from_id == "sender@example.com"
         assert mf.subject == "Greetings from Festember"
         assert mf.body == "Hello Job,\nSorry, you are rejected. KBye."
