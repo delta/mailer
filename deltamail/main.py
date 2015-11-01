@@ -111,16 +111,16 @@ def work():
     # Choosing Smart Send or Hard Send
     if smart_send:
         smart_send = os.path.abspath(smart_send)
-        campaign_object = CampaignFactory(*smart_send_fun(smart_send))
+        campaign_object = CampaignFactory(sendermailid, *smart_send_fun(smart_send))
     else:
-        campaign_object = CampaignFactory(*hard_send(args))
+        campaign_object = CampaignFactory(sendermailid, *hard_send(args))
 
     # Choosing Preview or Sending the Mail
     if preview_dir:
         preview_dir = os.path.abspath(preview_dir)
         campaign_object.preview(preview_dir)
     else:
-        mailer = Mailer(sendermailid, host, port, username, password)
+        mailer = Mailer(host, port, username, password)
         campaign_object.send(mailer)
 
 
