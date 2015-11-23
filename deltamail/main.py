@@ -9,7 +9,7 @@ import getpass
 import sys
 
 from deltamail.campaign import CampaignFactory
-from deltamail.mailer import Mailer
+import envelopes
 
 
 def console_main():
@@ -95,7 +95,7 @@ def work():
     # else:
     #    username = args["username"]
 
-    # mailer config
+    # conn config
     host = args['host']
     port = args['port']
     username = args['username']
@@ -120,14 +120,14 @@ def work():
         preview_dir = os.path.abspath(preview_dir)
         campaign_object.preview(preview_dir)
     else:
-        mailer = Mailer(host, port, username, password)
-        campaign_object.send(mailer)
+        conn = envelopes.conn.SMTP(host, port, username, password)
+        campaign_object.send(conn)
 
 
 def smart_send_fun(smart_send):
     '''
-    This function assumes all files are the given directory
-    and process them to mailer
+    This function assumes all files are in the given directory
+    and prepares the arguements for CampaignFactory
     '''
     subject = os.path.join(smart_send, "subject.txt")
     receivers = os.path.join(smart_send, "mailinglist.ml")
@@ -181,8 +181,8 @@ def smart_send_fun(smart_send):
 
 def hard_send(args):
     '''
-    This function gets the path of all
-    files separately and sends them to mailer.py
+    This function gets the path of all files separately
+    and prepares the arguements for CampaignFactory
     '''
     subject = args['subject']
     receivers = args['receivers']

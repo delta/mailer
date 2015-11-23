@@ -3,40 +3,10 @@
 Use the MailFactory function to create a Mail object.
 Uses jinja2 templates.
 '''
-from email.mime.text import MIMEText
-# from email.mime.multipart import MIMEMultipart
 from email.utils import formatdate
 
+import envelopes
 from jinja2 import Template
-
-
-class Mail(object):
-    '''Mail object - for internal usage'''
-    def __init__(self, from_id, subject, mailing_list, body):
-        '''
-        Initialize Mail object.
-
-        Args:
-            subject (str): Subject of the mail. Cannot be a template.
-            mailing_list (list): List of email addresses to whom the
-                mail will be sent.
-            body (str): The exact body of the mail (Can't be a template).
-
-        Returns:
-            None
-        '''
-        self.from_id = from_id
-        self.subject = subject
-        self.mailing_list = mailing_list
-        self.body = body
-
-    def encode_in_mime(self):
-        msg = MIMEText(self.body, 'html')
-        msg['Subject'] = self.subject
-        msg['From'] = self.from_id
-        msg['To'] = ','.join(self.mailing_list)
-        msg['Date'] = formatdate(localtime=True)
-        return msg.as_string()
 
 
 def MailFactory(from_id, subject, mailing_list, template_str, variables):
@@ -63,4 +33,6 @@ def MailFactory(from_id, subject, mailing_list, template_str, variables):
     body_template = Template(template_str)
     body = body_template.render(**variables)
 
-    return Mail(from_id, subject, mailing_list, body)
+    return envelopes.Envelope(from_addr=from_id, subject=subject,
+                              to_addr=mailing_list, html_body=body,
+                              headers={"Date": formatdate(localtime=True)})

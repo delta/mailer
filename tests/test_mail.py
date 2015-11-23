@@ -19,6 +19,6 @@ class TestMailFactory(object):
                 }
         )
 
-        assert mf.from_id == "sender@example.com"
-        assert mf.subject == "Greetings from Festember"
-        assert mf.body == "Hello Job,\nSorry, you are rejected. KBye."
+        assert mf.from_addr == "sender@example.com"
+        assert mf._subject == "Greetings from Festember"
+        assert mf._parts[0][1] == "Hello Job,\nSorry, you are rejected. KBye."
