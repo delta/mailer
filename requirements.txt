@@ -1,2 +1,1 @@
 jinja2==2.8
-envelopes==0.4

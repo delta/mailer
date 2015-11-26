@@ -147,7 +147,6 @@ class Campaign(object):
             if preview_count <= 0:
                 break
 
-
     def preview_one_in_browser(self):
         '''
         Open the first mail in browser
@@ -290,7 +289,7 @@ def CampaignFactory(from_addr, subject, mailing_list,
             is returned. In former case, BulkMailCampaign is returned.
         template_file (str): The filename that contains the template that is to
             be used to send the mails.
-        global_vars_file (Optional[str]): The filename that contains the global variables. 
+        global_vars_file (Optional[str]): The filename that contains the global variables.
 
     Returns:
         Campaign: BulkMailCampaign or TransactionMailCampaign based on whether

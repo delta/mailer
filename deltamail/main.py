@@ -9,7 +9,7 @@ import getpass
 import sys
 
 from deltamail.campaign import CampaignFactory
-import envelopes
+from deltamail import envelopes
 
 
 def console_main():

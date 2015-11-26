@@ -14,7 +14,7 @@ This test case sends the following mails:
     In #3, The email body will look incomplete, because the name and message
     fields in the template.mmtmpl file haven't been filled (because it's a BulkMail).
 
-    Other than these, the test suite also creates preview mails for each of the 
+    Other than these, the test suite also creates preview mails for each of the
     above mails preview-mails directory. Each Test class creates preview mails
     under the /preview-mails/<Test-class-name> directory.
 """
