@@ -194,7 +194,6 @@ class BulkMailCampaign(Campaign):
         Returns:
             None
         '''
-
         self._mails = [MailFactory(from_addr, subject, mailing_list,
                                    template_str, global_vars)]
 
@@ -210,7 +209,6 @@ class BulkMailCampaign(Campaign):
         Calls the Campaign.preview method with preview_count set to 1.
         The reason to do this is that for bulk mails, the same mail
         is sent. There is no point in creating separate preview files.
-
         Args:
             location (Optional[str]): Location to dump preview mail files.
                 Defaults to CURRENT_WORKING_DIR/email-preview.

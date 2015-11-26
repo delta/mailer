@@ -1,7 +1,7 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 import sys
 
@@ -10,10 +10,10 @@ requirement_list = [r.strip() for r in open('requirements.txt', 'r').readlines()
 
 setup(name='DeltaMail',
       version='0.0.1',
-      install_requires= requirement_list,
+      install_requires=requirement_list,
       author='Delta Force',
       author_email='delta@nitt.edu',
-      packages=['deltamail'],
+      packages=find_packages(),
       entry_points={
           'console_scripts': ['delta-mail=deltamail:console_main'],
       },
