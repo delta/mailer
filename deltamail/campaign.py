@@ -31,7 +31,7 @@ class Campaign(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_addr, subject, mailing_list, template_str, global_vars):
         '''
         Populate the self._mails list
 
@@ -43,7 +43,7 @@ class Campaign(object):
         '''
         pass
 
-    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
+    def __init__(self, from_addr, subject, mailing_list, template_str, global_vars):
         '''
         Initialise the Campaign class.
 
@@ -51,7 +51,7 @@ class Campaign(object):
         the the self._mails list.
 
         Args:
-            from_id (str): The "From" address for the mail being sent.
+            from_addr (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail (can be a template).
             mailing_list (list): The list of of email-ids to whom the
                 mails are to be sent. Type varies based on the *-Campaign
@@ -65,32 +65,33 @@ class Campaign(object):
         '''
         # will store the mail objects to be sent
         self._mails = []
-        self._create_mail_objects(from_id, subject, mailing_list, template_str, global_vars)
+        self._create_mail_objects(from_addr, subject, mailing_list, template_str, global_vars)
 
-    def send(self, mailer):
+    def send(self, smtp_conn):
         '''
         Send the mails.
 
-        Uses a Mailer instance to send the mails. Doesn't do anything
-        other than to call the Mailer.send() method for each of the
-        Mail objects in the Campaign. Just a helper/syntactic sugar.
+        Uses a envelopes.conn.SMTP instance to send the mails. Doesn't
+        do anything other than to call the smtp_conn.send() method for each
+        of the envelopes.Envelope objects in the Campaign. Just a
+        helper/syntactic sugar.
 
         Args:
-            mailer (Mailer): Used to do the actual sending
+            smtp_conn (envelopes.conn.SMTP): Used to do the actual sending
 
         Returns:
             None
         '''
         for mail in self._mails:
-            mailer.send(mail)
+            smtp_conn.send(mail)
 
     def preview(self, location="", preview_count=-1):
         '''
         Generate the html files to be sent in the `location` folder.
 
         Currently, the mails are being created as html files, and each
-        file is stored as "SUBJECT-RECEIVER_ID.html", and the filename
-        is limited to MAX_PREVIEW_FILE_LEN number of characters
+        file is stored as "SUBJECT-[to/cc/bcc]-RECEIVER_ID.html", and the
+        filename is limited to MAX_PREVIEW_FILE_LEN number of characters
         (excluding the ".html" extension).
 
         Args:
@@ -121,12 +122,16 @@ class Campaign(object):
             preview_count = len(self._mails)
 
         for mail in self._mails:
-            for receiver in mail.mailing_list:
+            receivers = [('to', addr) for addr in mail.to_addr]
+            receivers += [('cc', addr) for addr in mail.cc_addr]
+            receivers += [('bcc', addr) for addr in mail.bcc_addr]
+
+            for receiver in receivers:
                 if preview_count <= 0:
                     break
                 preview_count -= 1
 
-                filename = mail.subject + "-" + receiver
+                filename = mail._subject + "-" + receiver[0] + ":" + receiver[1]
                 filename = filename[:MAX_PREVIEW_FILE_LEN] + ".html"
 
                 # replace \ and / with - in case the subject contains
@@ -136,12 +141,11 @@ class Campaign(object):
 
                 # finally, write the body
                 fpreview = open(os.path.join(location, filename), "w")
-                fpreview.write(mail.body)
+                fpreview.write(mail._parts[0][1])
                 fpreview.close()
 
             if preview_count <= 0:
                 break
-
 
     def preview_one_in_browser(self):
         '''
@@ -167,7 +171,7 @@ class BulkMailCampaign(Campaign):
     '''
         Same mail sent to each person. (Allows usage of global variables)
     '''
-    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_addr, subject, mailing_list, template_str, global_vars):
         '''
         Populate the _mails list. (Private method)
 
@@ -178,7 +182,7 @@ class BulkMailCampaign(Campaign):
         Campaign class itself.
 
         Args:
-            from_id (str): The "From" address for the mail being sent.
+            from_addr (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail. Can be a template with
                 only global variables
             mailing_list (list): The list of the email ids to whom the mails
@@ -190,13 +194,12 @@ class BulkMailCampaign(Campaign):
         Returns:
             None
         '''
-
-        self._mails = [MailFactory(from_id, subject, mailing_list,
+        self._mails = [MailFactory(from_addr, subject, mailing_list,
                                    template_str, global_vars)]
 
-    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
+    def __init__(self, from_addr, subject, mailing_list, template_str, global_vars):
         super(BulkMailCampaign, self).__init__(
-            from_id, subject, mailing_list, template_str, global_vars
+            from_addr, subject, mailing_list, template_str, global_vars
         )
 
     def preview(self, location=""):
@@ -206,7 +209,6 @@ class BulkMailCampaign(Campaign):
         Calls the Campaign.preview method with preview_count set to 1.
         The reason to do this is that for bulk mails, the same mail
         is sent. There is no point in creating separate preview files.
-
         Args:
             location (Optional[str]): Location to dump preview mail files.
                 Defaults to CURRENT_WORKING_DIR/email-preview.
@@ -221,7 +223,7 @@ class BulkMailCampaign(Campaign):
 
 class TransactionMailCampaign(Campaign):
     '''Personalised mails sent to each person.'''
-    def _create_mail_objects(self, from_id, subject, mailing_list, template_str, global_vars):
+    def _create_mail_objects(self, from_addr, subject, mailing_list, template_str, global_vars):
         '''
         Populate the _mails list. (Private method)
 
@@ -235,7 +237,7 @@ class TransactionMailCampaign(Campaign):
         if any.
 
         Args:
-            from_id (str): The "From" address for the mail being sent.
+            from_addr (str): The "From" address for the mail being sent.
             subject (str): The subject of the mail. Can be a template with
                 global or personal variables.
             mailing_list (list): The list of the {"email","variables"} dicts
@@ -259,16 +261,16 @@ class TransactionMailCampaign(Campaign):
                 variables[key] = receiver["variables"][key]
 
             self._mails.append(
-                MailFactory(from_id, subject, [receiver["email"]], template_str, variables)
+                MailFactory(from_addr, subject, [receiver["email"]], template_str, variables)
             )
 
-    def __init__(self, from_id, subject, mailing_list, template_str, global_vars):
-        super(TransactionMailCampaign,self).__init__(
-            from_id, subject, mailing_list, template_str, global_vars
+    def __init__(self, from_addr, subject, mailing_list, template_str, global_vars):
+        super(TransactionMailCampaign, self).__init__(
+            from_addr, subject, mailing_list, template_str, global_vars
         )
 
 
-def CampaignFactory(from_id, subject, mailing_list,
+def CampaignFactory(from_addr, subject, mailing_list,
                     template_file, global_vars_file=""):
     '''
     Factory to construct BulkMailCampaign or TransactionMailCampaign object
@@ -276,7 +278,7 @@ def CampaignFactory(from_id, subject, mailing_list,
     Creates the appropriate Campaign object based on the input parameters.
 
     Args:
-        from_id (str): The "From" address for the mail being sent.
+        from_addr (str): The "From" address for the mail being sent.
         subject (str): The subject string for the mails being sent (can be template).
         mailing_list (list/str): A list of strings or a string (filename).
             If it's a list of strings, the strings are taken as email-ids.
@@ -285,7 +287,7 @@ def CampaignFactory(from_id, subject, mailing_list,
             is returned. In former case, BulkMailCampaign is returned.
         template_file (str): The filename that contains the template that is to
             be used to send the mails.
-        global_vars_file (Optional[str]): The filename that contains the global variables. 
+        global_vars_file (Optional[str]): The filename that contains the global variables.
 
     Returns:
         Campaign: BulkMailCampaign or TransactionMailCampaign based on whether
@@ -374,4 +376,4 @@ def CampaignFactory(from_id, subject, mailing_list,
     else:
         mail_constructor = BulkMailCampaign
 
-    return mail_constructor(from_id, subject, mailing_list, template_str, global_vars)
+    return mail_constructor(from_addr, subject, mailing_list, template_str, global_vars)

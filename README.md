@@ -52,6 +52,10 @@ First line contains the list of fields (tab separated) - the variables that
 are referred to in the mmtpl file. The first field is invariably the `email` 
 field. The following fields can be anything.
 
+If files are to be attached, have a field called `$attachments`, and the corresponding
+entry in each row can be an empty string or a semicolon-separated list of paths.
+Each path must lead to a valid file.
+
 The next line is left blank
 
 From the third line, each row will contain the values of the appropriate fields,
@@ -59,10 +63,10 @@ and this data will be used to make personalised emails
 
 Example:
 	
-	email	fname	lname	dob
+	email	fname	lname	dob	$attachments
 	
-	bob@rob.com	Bob	Rob	26-8-2015
-	hog@rob.com	Hog	Rob	26-8-1996
+	bob@rob.com	Bob	Rob	26-8-2015	~/delta/mailer/README1.md;~/delta/mailer/main.py
+	hog@rob.com	Hog	Rob	26-8-1996	~/delta/mailer/README2.md;~/delta/mailer/main.py
 	
 This file, when used as the -R option, will generate two mails.
 
@@ -78,6 +82,10 @@ Spaces to the right of the equal-to sign are considered part of the value.
 Trailing spaces in variable names are ignored. Spaces aren't allowed in the 
 variable names themselves. Though they may contain any other characters (other 
 than = of course)
+
+`$attachments` is a special variable - its value should be a semicolon separated
+list of paths that lead to valid files. These files will be attached to the
+mail.
 
 Testing:
 ========

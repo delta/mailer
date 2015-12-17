@@ -6,26 +6,30 @@ This test case sends the following mails:
         Both email ids appear in the mail (like CC).
     2. "TransactionMail : Greetings from Festember" to job@bob.com and pop@bob.com
         Two *separate* mails are sent. Unlike CC.
-    3. "CampaignFactoryBulk : Greetings from Festember" to job@bob.com, pop@bob.com, sop@bob.com
+    3. "CampaignFactoryBulk : Greetings from Festember" to FOB@bob.com, pop@bob.com
         All email ids appear in the mail (like CC).
-    4. "CampaignFactoryTransaction : Greetings from Festember" to the above three 
-        ids. Three *separate* mails are sent. Unlike CC.
+    4. "CampaignFactoryTransaction : Greetings from Festember" to job@bob.com, pop@bob.com,
+        sop@bob.com. Three *separate* mails are sent. Unlike CC.
 
     In #3, The email body will look incomplete, because the name and message
     fields in the template.mmtmpl file haven't been filled (because it's a BulkMail).
 
-    Other than these, the test suite also creates preview mails for each of the 
+    Other than these, the test suite also creates preview mails for each of the
     above mails preview-mails directory. Each Test class creates preview mails
     under the /preview-mails/<Test-class-name> directory.
 """
 
 import shutil
+import os
 
 from deltamail.campaign import BulkMailCampaign, TransactionMailCampaign
 from deltamail.campaign import CampaignFactory
-from deltamail.mailer import Mailer
 
-mailer = Mailer('mailtrap.io', 465, 'username', 'password')
+import envelopes
+
+mailer = envelopes.conn.SMTP('mailtrap.io', 465,
+                             os.environ['MAILER_TEST_USERNAME'],
+                             os.environ['MAILER_TEST_PASSWORD'])
 
 
 class TestBulkMailCampaign(object):
@@ -54,14 +58,14 @@ class TestBulkMailCampaign(object):
 
     def test_initialization(self):
         """
-        Test if underlying Mail objects are initialized properly
+        Test if underlying Envelope objects are initialized properly
         by BulkMailCampaign
         """
         mails = self.bmc._mails
         assert len(mails) == 1
-        assert mails[0].from_id == "sender@example.com"
-        assert mails[0].subject == "BulkMail : Greetings from Festember"
-        assert mails[0].body == "Hello Human, greetings from Festember.\nCopyright @ 2015"
+        assert mails[0]._from == "sender@example.com"
+        assert mails[0]._subject == "BulkMail : Greetings from Festember"
+        assert mails[0]._parts[0][1] == "Hello Human, greetings from Festember.\nCopyright @ 2015"
 
     def test_preview_default(self):
         """Test preview() with no args"""
@@ -123,19 +127,19 @@ class TestTransactionMailCampaign(object):
 
     def test_initialization(self):
         """
-        Test if underlying Mail objects are initialized properly
+        Test if underlying Envelope objects are initialized properly
         by TransactionMailCampaign
         """
         mails = self.tmc._mails
         assert len(mails) == 2
-        assert mails[0].from_id == "sender@example.com"
-        assert mails[1].from_id == "sender@example.com"
+        assert mails[0]._from == "sender@example.com"
+        assert mails[1]._from == "sender@example.com"
 
-        assert mails[0].subject == "TransactionMail : Greetings from Festember"
-        assert mails[1].subject == "TransactionMail : Greetings from Festember"
+        assert mails[0]._subject == "TransactionMail : Greetings from Festember"
+        assert mails[1]._subject == "TransactionMail : Greetings from Festember"
 
-        assert mails[0].body == "Hello Job,\nSorry, you are rejected. KBye."
-        assert mails[1].body == "Hello Pop,\nYay! You are selected. KBye."
+        assert mails[0]._parts[0][1] == "Hello Job,\nSorry, you are rejected. KBye."
+        assert mails[1]._parts[0][1] == "Hello Pop,\nYay! You are selected. KBye."
 
     def test_preview_default(self):
         """Test preview() with no args"""
@@ -161,7 +165,7 @@ class TestCampaignFactory(object):
 
     def setup(self):
         """Setup for the tests"""
-        from_id = "sender@example.com"
+        from_addr = "sender@example.com"
         subject_bulk = "CampaignFactoryBulk : Greetings from {{company}}"
         subject_transaction = "CampaignFactoryTransaction : Greetings from {{company}}"
         f_mailing_list = "./tests/testCampaignFactory-files/mailingList.ml"
@@ -170,8 +174,8 @@ class TestCampaignFactory(object):
 
         mailingList = ['FOB@bob.com', 'pop@bob.com']
 
-        self.bmc = CampaignFactory(from_id, subject_bulk, mailingList, f_template, f_global_vars)
-        self.tmc = CampaignFactory(from_id, subject_transaction, f_mailing_list, f_template, f_global_vars)
+        self.bmc = CampaignFactory(from_addr, subject_bulk, mailingList, f_template, f_global_vars)
+        self.tmc = CampaignFactory(from_addr, subject_transaction, f_mailing_list, f_template, f_global_vars)
 
     def teardown(self):
         """Cleanup the setup"""

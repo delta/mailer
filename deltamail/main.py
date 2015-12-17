@@ -9,7 +9,7 @@ import getpass
 import sys
 
 from deltamail.campaign import CampaignFactory
-from deltamail.mailer import Mailer
+from deltamail import envelopes_mod as envelopes
 
 
 def console_main():
@@ -17,7 +17,10 @@ def console_main():
         work()
     except:             # Catches *all* exceptions. https://wiki.python.org/moin/HandlingExceptions
         e = sys.exc_info()[1]
-        print "\nError: " + str(e)
+        # SystemExit raised by sys.exit() call in argparse.
+        # Nothing to print in that case. Print other errors.
+        if not isinstance(e, SystemExit):
+            print "\nError: " + str(e)
         sys.exit()
 
 
@@ -78,24 +81,10 @@ def work():
 
     parser.add_argument('-pw', '--preview',    help="to preview the mail(**the mail wont be sent**)")
     parser.add_argument('-sm', '--smart_send', help="path for smart send")
+
     args = vars(parser.parse_args())
 
-    # Checking if Username ,Port and Host are Provided
-
-    # if not args["host"]:
-    #    host = ""
-    #    print "host isnt specified. Using localhost\n"
-
-    # if not args["port"]:
-    #    port = ""
-    #    print "port isnt specified. Using 25\n"
-
-    # if not args["username"]:
-    #    raise Exception("Specify Username")
-    # else:
-    #    username = args["username"]
-
-    # mailer config
+    # conn config
     host = args['host']
     port = args['port']
     username = args['username']
@@ -120,14 +109,14 @@ def work():
         preview_dir = os.path.abspath(preview_dir)
         campaign_object.preview(preview_dir)
     else:
-        mailer = Mailer(host, port, username, password)
-        campaign_object.send(mailer)
+        conn = envelopes.conn.SMTP(host, port, username, password)
+        campaign_object.send(conn)
 
 
 def smart_send_fun(smart_send):
     '''
-    This function assumes all files are the given directory
-    and process them to mailer
+    This function assumes all files are in the given directory
+    and prepares the arguements for CampaignFactory
     '''
     subject = os.path.join(smart_send, "subject.txt")
     receivers = os.path.join(smart_send, "mailinglist.ml")
@@ -181,8 +170,8 @@ def smart_send_fun(smart_send):
 
 def hard_send(args):
     '''
-    This function gets the path of all
-    files separately and sends them to mailer.py
+    This function gets the path of all files separately
+    and prepares the arguements for CampaignFactory
     '''
     subject = args['subject']
     receivers = args['receivers']
@@ -228,7 +217,7 @@ def hard_send(args):
     elif receivers and not mailinglist:
         receivers = [each.strip() for each in receivers.split(',')]
     else:
-        raise SystemExit("Either use -r or -R. Don't use both.")
+        raise Exception("Either use -r or -R. Don't use both.")
 
     # For globals.var
     # if the file isnt provided , empty string is sent
