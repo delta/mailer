@@ -6,11 +6,11 @@ Uses jinja2 templates.
 import os.path as path
 from email.utils import formatdate
 
-from deltamail import envelopes_mod as env
+from deltamail import envelopes_mod as envelopes
 from jinja2 import Template
 
 
-def MailFactory(from_id, subject, mailing_list, template_str, variables):
+def MailFactory(from_addr, subject, mailing_list, template_str, variables):
     '''
     Create a Mail object.
 
@@ -18,6 +18,7 @@ def MailFactory(from_id, subject, mailing_list, template_str, variables):
     filled-in with the variables given.
 
     Args:
+        from_addr (str): The email address of the sender.
         subject (str): The subject of the mail. Can be a template.
         mailing_list (list): The list of the email addresses to whom
             the mail will be sent.
@@ -41,9 +42,9 @@ def MailFactory(from_id, subject, mailing_list, template_str, variables):
     body_template = Template(template_str)
     body = body_template.render(**variables)
 
-    envl = env.Envelope(from_addr=from_id, subject=subject,
-                        to_addr=mailing_list, html_body=body,
-                        headers={"Date": formatdate(localtime=True)})
+    envl = envelopes.Envelope(from_addr=from_addr, subject=subject,
+                              to_addr=mailing_list, html_body=body,
+                              headers={"Date": formatdate(localtime=True)})
 
     for attch in attachments:
         envl.add_attachment(path.abspath(path.expanduser(attch)))
