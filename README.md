@@ -70,6 +70,8 @@ Example:
 	
 This file, when used as the -R option, will generate two mails.
 
+**NOTE:** As of now, this does not allow you to send CC and BCC. Also, it doesn't not allow you to send the same email to multiple receipients - if you want to do that, you'll have to have two separate rows in the above file (i.e., comma-separated list of emails is not supported. *No error will be raised as of now. It will silently fail*)
+
 Format of a `.mvar` file:
 =========================
 

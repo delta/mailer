@@ -2,7 +2,10 @@
 import sys
 from os import path
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except:
+    from mock import patch
 
 from deltamail import envelopes_mod as envelopes
 from deltamail import mail

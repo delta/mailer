@@ -37,6 +37,7 @@ def MailFactory(from_addr, subject, mailing_list, template_str, variables):
         attachments = []
 
     subject_templ = Template(subject)
+
     subject = subject_templ.render(**variables)
 
     body_template = Template(template_str)
