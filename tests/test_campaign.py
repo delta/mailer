@@ -432,8 +432,9 @@ class TestCampaignFactory(object):
         # self._path_settings("fglobal_vars", True)
         self.fglobal_vars = ""
 
-        self._run(False)
+        ret = self._run(False)
         self.fglobal_vars = "fglobal_vars"
+        assert isinstance(ret, TransactionMailCampaign) 
 
         # 2.2. Global Vars file doesn't exists, path given
         self._path_settings("ftemplate", True)
@@ -445,7 +446,8 @@ class TestCampaignFactory(object):
         self._path_settings("ftemplate", True)
         self._path_settings("fglobal_vars", True)
         
-        self._run(False)
+        ret = self._run(False)
+        assert isinstance(ret, TransactionMailCampaign)
 
     def test_mailing_list(self):
         """Test CampaignFactory if mailing_list is a list of bad email-ids"""
@@ -464,8 +466,9 @@ class TestCampaignFactory(object):
         # self._path_settings("fglobal_vars", True)
         self.fglobal_vars = ""
 
-        self._run(False)
+        ret = self._run(False)
         self.fglobal_vars = "fglobal_vars"
+        assert isinstance(ret, BulkMailCampaign)
 
         # 2.2. Global Vars file doesn't exists, path given
         self._path_settings("ftemplate", True)
@@ -477,4 +480,5 @@ class TestCampaignFactory(object):
         self._path_settings("ftemplate", True)
         self._path_settings("fglobal_vars", True)
         
-        self._run(False)
+        ret = self._run(False)
+        assert isinstance(ret, BulkMailCampaign)

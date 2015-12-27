@@ -90,8 +90,9 @@ def work():
     username = args['username']
     sendermailid = args['sendermailid'] or (username + '@' + host)
 
-    # read the password
-    password = getpass.getpass(prompt="Password for %s@%s: " % (username, host))
+    # read the password if it's not a preview
+    if not preview_dir:
+        password = getpass.getpass(prompt="Password for %s@%s: " % (username, host))
 
     # send/preview?
     smart_send = args['smart_send']
@@ -214,6 +215,7 @@ def hard_send(args):
             raise Exception("`%s` doesn't exist." % (mailinglist,))
         elif not os.access(mailinglist, os.R_OK):
             raise Exception("Please provide read access to `%s`." % (mailinglist,))
+        receivers = mailinglist
     elif receivers and not mailinglist:
         receivers = [each.strip() for each in receivers.split(',')]
     else:
@@ -231,6 +233,7 @@ def hard_send(args):
             raise Exception("Please provide read access to `%s`." % (global_var,))
     else:
         global_var = ""
+
     return [subject, receivers, template, global_var]
 
 

@@ -297,7 +297,6 @@ def CampaignFactory(from_addr, subject, mailing_list,
 
     TODO (thakkarparth007): Use better exception-names.
     '''
-
     # The following variables are used to initialise the appropriate class
     #
     #   template_str : The template string read from the template file
