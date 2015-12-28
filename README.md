@@ -2,6 +2,8 @@
 ---
 Command line mail utility
 
+[![Build Status](https://travis-ci.org/thakkarparth007/mailer.svg?branch=master)](https://travis-ci.org/thakkarparth007/mailer)
+
 Installation:
 =============
 1. Clone the repo on your computer and `cd` to the root folder of the project.
@@ -13,7 +15,7 @@ Usage:
 *NOTE: The following examples call the program `delta-mail`. This is how it is currently named, however the name is expected to be changed soon.*
 
 - Sending the exact same mail to a list of people. No variables in the mail template
-	
+    
 	`delta-mail -r="bob@job.com,job@bob.com" -s="Welcome" -t=input.mmtmpl -u="123456789" -o=mailtrap.io -p=25`
 
 - Sending the exact same mail to a list of people. However, the email template
@@ -69,6 +71,8 @@ Example:
 	hog@rob.com	Hog	Rob	26-8-1996	~/delta/mailer/README2.md;~/delta/mailer/main.py
 	
 This file, when used as the -R option, will generate two mails.
+
+**NOTE:** As of now, this does not allow you to send CC and BCC. Also, it doesn't not allow you to send the same email to multiple receipients - if you want to do that, you'll have to have two separate rows in the above file (i.e., comma-separated list of emails is not supported. *No error will be raised as of now. It will silently fail*)
 
 Format of a `.mvar` file:
 =========================

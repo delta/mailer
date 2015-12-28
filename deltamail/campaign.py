@@ -90,7 +90,7 @@ class Campaign(object):
         Generate the html files to be sent in the `location` folder.
 
         Currently, the mails are being created as html files, and each
-        file is stored as "SUBJECT-[to/cc/bcc]-RECEIVER_ID.html", and the
+        file is stored as "SUBJECT-RECEIVER_IDs.html", and the
         filename is limited to MAX_PREVIEW_FILE_LEN number of characters
         (excluding the ".html" extension).
 
@@ -106,7 +106,6 @@ class Campaign(object):
                 or, if the location isn't given and "email-preview"
                 folder already exists.
         '''
-
         # TODO(thakkarparth007): Raise better exceptions.
         if location is "":
             location = os.path.join(os.getcwd(), "email-preview", "")
@@ -122,30 +121,26 @@ class Campaign(object):
             preview_count = len(self._mails)
 
         for mail in self._mails:
-            receivers = [('to', addr) for addr in mail.to_addr]
-            receivers += [('cc', addr) for addr in mail.cc_addr]
-            receivers += [('bcc', addr) for addr in mail.bcc_addr]
-
-            for receiver in receivers:
-                if preview_count <= 0:
-                    break
-                preview_count -= 1
-
-                filename = mail._subject + "-" + receiver[0] + ":" + receiver[1]
-                filename = filename[:MAX_PREVIEW_FILE_LEN] + ".html"
-
-                # replace \ and / with - in case the subject contains
-                # those characters
-                filename.replace(r"/", "-")
-                filename.replace("\\", "-")
-
-                # finally, write the body
-                fpreview = open(os.path.join(location, filename), "w")
-                fpreview.write(mail._parts[0][1])
-                fpreview.close()
-
             if preview_count <= 0:
-                break
+                    break
+            preview_count -= 1
+
+            receivers = ",".join(mail.to_addr + mail.cc_addr + mail.bcc_addr)
+
+            filename = mail._subject + "-" + receivers
+            filename = filename[:MAX_PREVIEW_FILE_LEN] + ".html"
+
+            # replace \ and / with - in case the subject contains
+            # those characters. Also replace : with - as it will otherwise
+            # hurt on windows.
+            filename = filename.replace(r"/", "-")
+            filename = filename.replace("\\", "-")
+            filename = filename.replace(r":", "-")
+
+            # finally, write the body
+            fpreview = open(os.path.join(location, filename), "w")
+            fpreview.write(mail._parts[0][1])
+            fpreview.close()
 
     def preview_one_in_browser(self):
         '''
@@ -302,7 +297,6 @@ def CampaignFactory(from_addr, subject, mailing_list,
 
     TODO (thakkarparth007): Use better exception-names.
     '''
-
     # The following variables are used to initialise the appropriate class
     #
     #   template_str : The template string read from the template file
@@ -311,6 +305,7 @@ def CampaignFactory(from_addr, subject, mailing_list,
     #                 mailing list
 
     # read the template file
+
     if os.path.exists(template_file) is False:
         raise Exception("Template list file ({0}) doesn't exist"
                         .format(os.path.abspath(template_file)))
